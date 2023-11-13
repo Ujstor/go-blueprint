@@ -37,16 +37,20 @@ type Templater interface {
 	Main() []byte
 	Server() []byte
 	Routes() []byte
+	ServerTest() []byte
+	RoutesTest() []byte
 }
 
 var (
-	chiPackage     = []string{"github.com/go-chi/chi/v5"}
-	gorillaPackage = []string{"github.com/gorilla/mux"}
-	routerPackage  = []string{"github.com/julienschmidt/httprouter"}
-	ginPackage     = []string{"github.com/gin-gonic/gin"}
-	fiberPackage   = []string{"github.com/gofiber/fiber/v2"}
-	echoPackage    = []string{"github.com/labstack/echo/v4", "github.com/labstack/echo/v4/middleware"}
+	chiPackage     			= []string{"github.com/go-chi/chi/v5", testPackage}
+	gorillaPackage 			= []string{"github.com/gorilla/mux", testPackage}
+	routerPackage  			= []string{"github.com/julienschmidt/httprouter", testPackage}
+	ginPackage     			= []string{"github.com/gin-gonic/gin", testPackage}
+	fiberPackage   			= []string{"github.com/gofiber/fiber/v2", testPackage}
+	echoPackage    			= []string{"github.com/labstack/echo/v4", "github.com/labstack/echo/v4/middleware", testPackage}
+	standardLibraryPackage  = []string{testPackage}
 
+	testPackage		   = "github.com/stretchr/testify/assert"
 	cmdApiPath         = "cmd/api"
 	internalServerPath = "internal/server"
 )
@@ -72,7 +76,7 @@ func (p *Project) createFrameworkMap() {
 	}
 
 	p.FrameworkMap["standard library"] = Framework{
-		packageName: []string{},
+		packageName: standardLibraryPackage,
 		templater:   tpl.StandardLibTemplate{},
 	}
 
@@ -138,12 +142,10 @@ func (p *Project) CreateMainFile() error {
 	}
 
 	// Install the correct package for the selected framework
-	if p.ProjectType != "standard library" {
-		err = utils.GoGetPackage(projectPath, p.FrameworkMap[p.ProjectType].packageName)
-		if err != nil {
-			log.Printf("Could not install go dependency for the chosen framework %v\n", err)
-			cobra.CheckErr(err)
-		}
+	err = utils.GoGetPackage(projectPath, p.FrameworkMap[p.ProjectType].packageName)
+	if err != nil {
+		log.Printf("Could not install go dependency for the chosen framework %v\n", err)
+		cobra.CheckErr(err)
 	}
 
 	err = p.CreatePath(cmdApiPath, projectPath)
@@ -206,6 +208,20 @@ func (p *Project) CreateMainFile() error {
 	err = p.CreateFileWithInjection(internalServerPath, projectPath, "routes.go", "routes")
 	if err != nil {
 		log.Printf("Error injecting routes.go file: %v", err)
+		cobra.CheckErr(err)
+		return err
+	}
+
+	err = p.CreateFileWithInjection(internalServerPath, projectPath, "server_test.go", "server_test")
+	if err != nil {
+		log.Printf("Error injecting server_test.go file: %v", err)
+		cobra.CheckErr(err)
+		return err
+	}
+
+	err = p.CreateFileWithInjection(internalServerPath, projectPath, "routes_test.go", "routes_test")
+	if err != nil {
+		log.Printf("Error injecting routes_test.go file: %v", err)
 		cobra.CheckErr(err)
 		return err
 	}
@@ -289,6 +305,12 @@ func (p *Project) CreateFileWithInjection(pathToCreate string, projectPath strin
 		err = createdTemplate.Execute(createdFile, p)
 	case "routes":
 		createdTemplate := template.Must(template.New(fileName).Parse(string(p.FrameworkMap[p.ProjectType].templater.Routes())))
+		err = createdTemplate.Execute(createdFile, p)
+	case "server_test":
+		createdTemplate := template.Must(template.New(fileName).Parse(string(p.FrameworkMap[p.ProjectType].templater.ServerTest())))
+		err = createdTemplate.Execute(createdFile, p)
+	case "routes_test":
+		createdTemplate := template.Must(template.New(fileName).Parse(string(p.FrameworkMap[p.ProjectType].templater.RoutesTest())))
 		err = createdTemplate.Execute(createdFile, p)
 	}
 

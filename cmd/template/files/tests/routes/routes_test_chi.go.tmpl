@@ -1,0 +1,35 @@
+package server
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// Checks if routes are registered correctly
+func TestRegisterRoutes(t *testing.T) {
+	s := &Server{}
+	router := s.RegisterRoutes()
+
+	assert.NotNil(t, router, "Router should not be nil")
+}
+
+// Checks the hello world handler response
+func TestHelloWorldHandler(t *testing.T) {
+	s := &Server{}
+	router := s.RegisterRoutes()
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
+
+	var resp map[string]string
+	err := json.Unmarshal(rr.Body.Bytes(), &resp)
+	assert.Nil(t, err, "Should not have an error unmarshalling response")
+	assert.Equal(t, "Hello World", resp["message"], "Response message should be 'Hello World'")
+}

@@ -1,0 +1,25 @@
+package server
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// Checks the configuration of the new HTTP server
+func TestNewServer(t *testing.T) {
+	server := NewServer()
+
+	assert.NotNil(t, server, "Server should not be nil")
+
+	// Check if the address (port) is correctly set
+	expectedAddr := fmt.Sprintf(":%d", port)
+	assert.Equal(t, expectedAddr, server.Addr, "Server address should match expected port")
+
+	// Check the configured timeouts
+	assert.Equal(t, time.Minute, server.IdleTimeout, "IdleTimeout should be 1 minute")
+	assert.Equal(t, 10*time.Second, server.ReadTimeout, "ReadTimeout should be 10 seconds")
+	assert.Equal(t, 30*time.Second, server.WriteTimeout, "WriteTimeout should be 30 seconds")
+}
