@@ -15,25 +15,25 @@ func TestRegisterRoutes(t *testing.T) {
 	s := &Server{}
 	handler := s.RegisterRoutes()
 
-	e, ok := handler.(*echo.Echo)
+	r, ok := handler.(*echo.Echo)
 	assert.True(t, ok, "Handler should be of type *echo.Echo")
-	assert.NotNil(t, e, "Echo instance should not be nil")
+	assert.NotNil(t, r, "Echo instance should not be nil")
 }
 
 // Checks the hello world handler response in Echo
 func TestHelloWorldHandler(t *testing.T) {
 	s := &Server{}
-	e := echo.New()
-	e.GET("/", s.helloWorldHandler)
+	r := echo.New()
+	r.GET("/", s.helloWorldHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	e.ServeHTTP(rec, req)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, rec.Code, "Status code should be 200")
+	assert.Equal(t, http.StatusOK, w.Code, "Status code should be 200")
 
 	var resp map[string]string
-	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err, "Should not have an error unmarshalling response")
 	assert.Equal(t, "Hello World", resp["message"], "Response message should be 'Hello World'")
 }

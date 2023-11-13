@@ -6,30 +6,33 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
 // Checks if routes are registered correctly
 func TestRegisterRoutes(t *testing.T) {
 	s := &Server{}
-	router := s.RegisterRoutes()
+	hendler := s.RegisterRoutes()
 
-	assert.NotNil(t, router, "Router should not be nil")
+	r, ok := hendler.(*chi.Mux)
+	assert.True(t, ok, "Router should be of type *chi.Mux")
+	assert.NotNil(t, r, "Chi router should not be nil")
 }
 
 // Checks the hello world handler response
 func TestHelloWorldHandler(t *testing.T) {
 	s := &Server{}
-	router := s.RegisterRoutes()
+	r := s.RegisterRoutes()
 
 	req, _ := http.NewRequest("GET", "/", nil)
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, rr.Code, "Status code should be 200")
+	assert.Equal(t, http.StatusOK, w.Code, "Status code should be 200")
 
 	var resp map[string]string
-	err := json.Unmarshal(rr.Body.Bytes(), &resp)
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Nil(t, err, "Should not have an error unmarshalling response")
 	assert.Equal(t, "Hello World", resp["message"], "Response message should be 'Hello World'")
 }
