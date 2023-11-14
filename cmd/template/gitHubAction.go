@@ -15,7 +15,7 @@ var gitHubActionLintingTemplate []byte
 
 type GitHubActionTemplate struct{}
 
-func (a GitHubActionTemplate) Pipline() []byte {
+func (a GitHubActionTemplate) Pipline1() []byte {
 	return gitHubActionBuildTemplate
 }
 

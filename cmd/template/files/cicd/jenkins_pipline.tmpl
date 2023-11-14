@@ -43,7 +43,7 @@ pipeline {
             }
             steps {
                 script {
-                    TAG = sh(script: "${WORKSPACE}/jenkinsconfig/docker_tag.sh $DOCKER_HUB_USERNAME $DOCKER_REPO_NAME $VERSION_PART", returnStdout: true).trim()
+                    TAG = sh(script: "${WORKSPACE}/docker_tag.sh $DOCKER_HUB_USERNAME $DOCKER_REPO_NAME $VERSION_PART", returnStdout: true).trim()
 
                     if (TAG) {
                         echo "Docker image tag generated successfully: $TAG"

@@ -21,7 +21,9 @@ type Project struct {
 	Exit         bool
 	AbsolutePath string
 	ProjectType  string
+	CICD 		 string
 	FrameworkMap map[string]Framework
+	CICDMap 	 map[string]CICD
 }
 
 // A Framework contains the name and templater for a
@@ -29,6 +31,11 @@ type Project struct {
 type Framework struct {
 	packageName []string
 	templater   Templater
+}
+
+type CICD struct {
+	packageName []string
+	templater CICDTemplater
 }
 
 // A Templater has the methods that help build the files
@@ -39,6 +46,13 @@ type Templater interface {
 	Routes() []byte
 	ServerTest() []byte
 	RoutesTest() []byte
+}
+
+type CICDTemplater interface {
+	Pipline1() []byte
+	Pipline2() []byte
+	Pipline3() []byte
+	
 }
 
 var (
@@ -53,6 +67,8 @@ var (
 	testPackage		   = "github.com/stretchr/testify/assert"
 	cmdApiPath         = "cmd/api"
 	internalServerPath = "internal/server"
+	gitHubActionPath   = ".github/workflows"
+	rootPath 		   = ""
 )
 
 // ExitCLI checks if the Project has been exited, and closes
@@ -106,6 +122,18 @@ func (p *Project) createFrameworkMap() {
 	}
 }
 
+func (p *Project) createCICDMap() {
+	p.CICDMap["jenkins"] = CICD{
+		packageName: []string{},
+		templater: tpl.JenkinsTemplate{},
+	}
+
+	p.CICDMap["github-action"] = CICD{
+		packageName: []string{},
+		templater: tpl.GitHubActionTemplate{},
+	}
+}
+
 // CreateMainFile creates the project folders and files,
 // and writes to them depending on the selected options
 func (p *Project) CreateMainFile() error {
@@ -139,6 +167,63 @@ func (p *Project) CreateMainFile() error {
 	if err != nil {
 		log.Printf("Could not initialize go.mod in new project %v\n", err)
 		cobra.CheckErr(err)
+	}
+
+	if p.CICD == "github-action" {
+		p.createCICDMap()
+
+		err = p.CreatePath(gitHubActionPath, projectPath)
+		if err != nil {
+			log.Printf("Error creating path: %s", gitHubActionPath)
+			cobra.CheckErr(err)
+			return err
+		}
+
+		err = p.CreateFileWithInjection(gitHubActionPath, projectPath, "release.yml", "pipline1")
+		if err != nil {
+			log.Printf("Error injecting release.yml file: %v", err)
+			cobra.CheckErr(err)
+			return err
+		}
+
+		err = p.CreateFileWithInjection(gitHubActionPath, projectPath, "go-test.yml", "pipline2")
+		if err != nil {
+			log.Printf("Error injecting go-test.yml file: %v", err)
+			cobra.CheckErr(err)
+			return err
+		}
+
+		err = p.CreateFileWithInjection(gitHubActionPath, projectPath, "linting.yml", "pipline3")
+		if err != nil {
+			log.Printf("Error injecting go-linting.yml file: %v", err)
+			cobra.CheckErr(err)
+			return err
+		}		
+	}
+
+	if p.CICD == "jenkins"{
+		p.createCICDMap()
+
+		err = p.CreateFileWithInjection(rootPath, projectPath, "Jenkinsfile", "pipline1")
+		if err != nil {
+			log.Printf("Error injecting Jenkinsfile file: %v", err)
+			cobra.CheckErr(err)
+			return err
+		}
+
+		err = p.CreateFileWithInjection(rootPath, projectPath, "docker_tag.sh", "pipline2")
+		if err != nil {
+			log.Printf("Error injecting docker_tag.sh file: %v", err)
+			cobra.CheckErr(err)
+			return err
+		}
+
+		err = p.CreateFileWithInjection(rootPath, projectPath, "Dockerfile", "pipline3")
+		if err != nil {
+			log.Printf("Error injecting Dockerfile file: %v", err)
+			cobra.CheckErr(err)
+			return err
+		}
 	}
 
 	// Install the correct package for the selected framework
@@ -312,8 +397,17 @@ func (p *Project) CreateFileWithInjection(pathToCreate string, projectPath strin
 	case "routes_test":
 		createdTemplate := template.Must(template.New(fileName).Parse(string(p.FrameworkMap[p.ProjectType].templater.RoutesTest())))
 		err = createdTemplate.Execute(createdFile, p)
+	case "pipline1":
+		createdTemplate := template.Must(template.New(fileName).Parse(string(p.CICDMap[p.CICD].templater.Pipline1())))
+		err = createdTemplate.Execute(createdFile, p)
+	case "pipline2":
+		createdTemplate := template.Must(template.New(fileName).Parse(string(p.CICDMap[p.CICD].templater.Pipline2())))
+		err = createdTemplate.Execute(createdFile, p)
+	case "pipline3":
+		createdTemplate := template.Must(template.New(fileName).Parse(string(p.CICDMap[p.CICD].templater.Pipline3())))
+		err = createdTemplate.Execute(createdFile, p)
 	}
-
+	
 	if err != nil {
 		return err
 	}

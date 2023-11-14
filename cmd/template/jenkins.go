@@ -15,14 +15,14 @@ var dockerfileTemplate []byte
 
 type JenkinsTemplate struct{}
 
-func (j JenkinsTemplate) Pipline() []byte {
-	return gitHubActionBuildTemplate
+func (j JenkinsTemplate) Pipline1() []byte {
+	return jenkinsTemplate
 }
 
 func (j JenkinsTemplate) Pipline2() []byte {
-	return gitHubActionTestTemplate
+	return dockerTagTemplate
 }
 
 func (j JenkinsTemplate) Pipline3() []byte {
-	return gitHubActionLintingTemplate
+	return dockerfileTemplate
 }
