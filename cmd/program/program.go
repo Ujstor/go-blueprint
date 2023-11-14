@@ -4,7 +4,7 @@ package program
 
 import (
 	"fmt"
-	"html/template"
+	"text/template"
 	"log"
 	"os"
 	"strings"

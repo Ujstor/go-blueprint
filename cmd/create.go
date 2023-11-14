@@ -8,6 +8,7 @@ import (
 	"github.com/melkeydev/go-blueprint/cmd/steps"
 	"github.com/melkeydev/go-blueprint/cmd/ui/multiInput"
 	"github.com/melkeydev/go-blueprint/cmd/ui/textinput"
+	"github.com/melkeydev/go-blueprint/cmd/utils"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -29,6 +30,7 @@ const logo = `
 
 var (
 	logoStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("#01FAC6")).Bold(true)
+	tipMsgStyle = lipgloss.NewStyle().PaddingLeft(1).Foreground(lipgloss.Color("190")).Italic(true)
 	endingMsgStyle      = lipgloss.NewStyle().PaddingLeft(1).Foreground(lipgloss.Color("170")).Bold(true)
 	allowedProjectTypes = []string{"chi", "gin", "fiber", "gorilla/mux", "httprouter", "standard-library", "echo"}
 	allowedCICD   		= []string{"jenkins", "github-action", "none"}
@@ -62,7 +64,7 @@ var createCmd = &cobra.Command{
 			ProjectType: &multiInput.Selection{},
 			CICD:		 &multiInput.Selection{},	
 		}
-
+		isInteractive := !utils.HasChangedFlag(cmd.Flags())
 		flagName := cmd.Flag("name").Value.String()
 		flagFramework := cmd.Flag("framework").Value.String()
 		flagCICD := cmd.Flag("cicd").Value.String()
@@ -144,6 +146,12 @@ var createCmd = &cobra.Command{
 
 		fmt.Println(endingMsgStyle.Render("\nNext steps cd into the newly created project with:"))
 		fmt.Println(endingMsgStyle.Render(fmt.Sprintf("• cd %s\n", project.ProjectName)))
+
+		if isInteractive {
+			nonInteractiveCommand := utils.NonInteractiveCommand(cmd.Flags())
+			fmt.Println(tipMsgStyle.Render("Tip: Repeat the equivalent Blueprint with the following non-interactive command:"))
+			fmt.Println(tipMsgStyle.Italic(false).Render(fmt.Sprintf("• %s\n", nonInteractiveCommand)))
+		}
 	},
 }
 
