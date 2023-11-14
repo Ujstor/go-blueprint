@@ -2,10 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/melkeydev/go-blueprint/cmd/program"
@@ -14,6 +10,9 @@ import (
 	"github.com/melkeydev/go-blueprint/cmd/ui/textinput"
 	"github.com/melkeydev/go-blueprint/cmd/utils"
 	"github.com/spf13/cobra"
+	"log"
+	"os"
+	"strings"
 )
 
 const logo = `
@@ -31,9 +30,10 @@ const logo = `
 
 var (
 	logoStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("#01FAC6")).Bold(true)
-	tipMsgStyle         = lipgloss.NewStyle().PaddingLeft(1).Foreground(lipgloss.Color("190")).Italic(true)
+	tipMsgStyle = lipgloss.NewStyle().PaddingLeft(1).Foreground(lipgloss.Color("190")).Italic(true)
 	endingMsgStyle      = lipgloss.NewStyle().PaddingLeft(1).Foreground(lipgloss.Color("170")).Bold(true)
 	allowedProjectTypes = []string{"chi", "gin", "fiber", "gorilla/mux", "httprouter", "standard-library", "echo"}
+	allowedCICD   		  = []string{"jenkins", "github-action", "none"}
 )
 
 func init() {
@@ -41,6 +41,13 @@ func init() {
 
 	createCmd.Flags().StringP("name", "n", "", "Name of project to create")
 	createCmd.Flags().StringP("framework", "f", "", fmt.Sprintf("Framework to use. Allowed values: %s", strings.Join(allowedProjectTypes, ", ")))
+	createCmd.Flags().StringP("cicd", "c", "", fmt.Sprintf("cicd to use. Allowed values: %s", strings.Join(allowedCICD, ", ")))
+}
+
+type Options struct {
+	ProjectName *textinput.Output
+	ProjectType *multiInput.Selection
+	CICD 		    *multiInput.Selection
 }
 
 // createCmd defines the "create" command for the CLI
@@ -53,18 +60,19 @@ var createCmd = &cobra.Command{
 		var tprogram *tea.Program
 		var err error
 
-		options := steps.Options{
+		options := Options{
 			ProjectName: &textinput.Output{},
+			ProjectType: &multiInput.Selection{},
+			CICD:		     &multiInput.Selection{},	
 		}
-
 		isInteractive := !utils.HasChangedFlag(cmd.Flags())
-
 		flagName := cmd.Flag("name").Value.String()
 		if flagName != "" && doesDirectoryExistAndIsNotEmpty(flagName) {
 			err = fmt.Errorf("Directory '%s' already exists and is not empty. Please choose a different name", flagName)
 			cobra.CheckErr(textinput.CreateErrorInputModel(err).Err())
 		}
 		flagFramework := cmd.Flag("framework").Value.String()
+		flagCICD := cmd.Flag("cicd").Value.String()
 
 		if flagFramework != "" {
 			isValid := isValidProjectType(flagFramework, allowedProjectTypes)
@@ -74,17 +82,28 @@ var createCmd = &cobra.Command{
 			}
 		}
 
-		project := &program.Project{
-			FrameworkMap: make(map[string]program.Framework),
-			ProjectName:  flagName,
-			ProjectType:  strings.ReplaceAll(flagFramework, "-", " "),
+
+		if flagCICD != "" {
+			isValid := isValidCICD(flagCICD, allowedCICD)
+			if !isValid {
+				cobra.CheckErr(fmt.Errorf("CICD piplne '%s' is not valid. Valid types are: %s", flagCICD, strings.Join(allowedCICD, ", ")))
+			}
 		}
 
-		steps := steps.InitSteps(&options)
+		project := &program.Project{
+			ProjectName:  flagName,
+			ProjectType:  strings.ReplaceAll(flagFramework, "-", " "),
+			CICD:		  flagCICD,
+			FrameworkMap: make(map[string]program.Framework),
+			CICDMap: 	  make(map[string]program.CICD),
+		}
+
+		steps := steps.InitSteps()
 		fmt.Printf("%s\n", logoStyle.Render(logo))
 
 		if project.ProjectName == "" {
 			tprogram := tea.NewProgram(textinput.InitialTextInputModel(options.ProjectName, "What is the name of your project?", project))
+
 			if _, err := tprogram.Run(); err != nil {
 				log.Printf("Name of project contains an error: %v", err)
 				cobra.CheckErr(textinput.CreateErrorInputModel(err).Err())
@@ -96,32 +115,31 @@ var createCmd = &cobra.Command{
 			project.ExitCLI(tprogram)
 
 			project.ProjectName = options.ProjectName.Output
-			err := cmd.Flag("name").Value.Set(project.ProjectName)
-			if err != nil {
-				log.Fatal("failed to set the name flag value", err)
-			}
 		}
 
 		if project.ProjectType == "" {
-			for _, step := range steps.Steps {
-				s := &multiInput.Selection{}
-				tprogram = tea.NewProgram(multiInput.InitialModelMulti(step.Options, s, step.Headers, project))
-				if _, err := tprogram.Run(); err != nil {
-					cobra.CheckErr(textinput.CreateErrorInputModel(err).Err())
-				}
+			step := steps.Steps["framework"]
+			tprogram = tea.NewProgram(multiInput.InitialModelMulti(step.Options, options.ProjectType, step.Headers, project))
+			if _, err := tprogram.Run(); err != nil {
+				cobra.CheckErr(err)
 				project.ExitCLI(tprogram)
-
-				*step.Field = s.Choice
 			}
-
-			project.ProjectType = strings.ToLower(options.ProjectType)
-			err := cmd.Flag("framework").Value.Set(project.ProjectType)
-			if err != nil {
-				log.Fatal("failed to set the framework flag value", err)
-			}
+			project.ProjectType = strings.ToLower(options.ProjectType.Choice)
 		}
+    
+		if project.CICD == "" {
+			step := steps.Steps["cicd"]
+			tprogram = tea.NewProgram(multiInput.InitialModelMulti(step.Options, options.CICD, step.Headers, project))
+			if _, err := tprogram.Run(); err != nil {
+				cobra.CheckErr(err)
+				project.ExitCLI(tprogram)
+			}
+			project.CICD = strings.ToLower(options.CICD.Choice)
+		}	
 
 		currentWorkingDir, err := os.Getwd()
+		project.AbsolutePath = currentWorkingDir
+
 		if err != nil {
 			log.Printf("could not get current working directory: %v", err)
 			cobra.CheckErr(textinput.CreateErrorInputModel(err).Err())
@@ -147,7 +165,7 @@ var createCmd = &cobra.Command{
 	},
 }
 
-// isValidProjectType checks if the inputted project type matches
+// isValidProjectType checks if the inputted project type matches 
 // the currently supported list of project types
 func isValidProjectType(input string, allowedTypes []string) bool {
 	for _, t := range allowedTypes {
@@ -158,6 +176,15 @@ func isValidProjectType(input string, allowedTypes []string) bool {
 	return false
 }
 
+func isValidCICD(input string, allowedCICD []string) bool {
+	for _, c := range allowedCICD {
+		if input == c {
+			return true
+      }
+	}
+	return false
+}
+  
 // doesDirectoryExistAndIsNotEmpty checks if the directory exists and is not empty
 func doesDirectoryExistAndIsNotEmpty(name string) bool {
 	if _, err := os.Stat(name); err == nil {

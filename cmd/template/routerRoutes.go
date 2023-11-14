@@ -7,6 +7,9 @@ import (
 //go:embed files/routes/http_router.go.tmpl
 var httpRouterRoutesTemplate []byte
 
+//go:embed files/tests/routes/routes_test_http_router.go.tmpl
+var httpRouterRoutesTestTemplate []byte
+
 // RouterTemplates contains the methods used for building
 // an app that uses [github.com/julienschmidt/httprouter]
 type RouterTemplates struct{}
@@ -19,4 +22,12 @@ func (r RouterTemplates) Server() []byte {
 }
 func (r RouterTemplates) Routes() []byte {
 	return httpRouterRoutesTemplate
+}
+
+func (r RouterTemplates) ServerTest() []byte {
+	return standardServerTestTemplate
+}
+
+func (r RouterTemplates) RoutesTest() []byte {
+	return httpRouterRoutesTestTemplate
 }

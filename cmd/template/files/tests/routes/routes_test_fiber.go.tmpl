@@ -1,0 +1,46 @@
+package server
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/stretchr/testify/assert"
+)
+
+
+// Creates a new FiberServer instance.
+func NewFiberServer() *FiberServer {
+	return &FiberServer{App: fiber.New()}
+}
+
+// Checks if routes are registered correctly in Fiber
+func TestRegisterFiberRoutes(t *testing.T) {
+	s := NewFiberServer()
+	s.RegisterFiberRoutes()
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	resp, err := s.App.Test(req)
+
+	assert.NoError(t, err, "Error should be nil")
+	assert.NotNil(t, resp, "Response should not be nil")
+}
+
+// Checks the hello world handler response in Fiber
+func TestHelloWorldHandler(t *testing.T) {
+	s := NewFiberServer()
+	s.RegisterFiberRoutes()
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	resp, err := s.App.Test(req)
+
+	assert.NoError(t, err, "Error should be nil")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Status code should be 200")
+
+	var body map[string]string
+	err = json.NewDecoder(resp.Body).Decode(&body)
+	assert.NoError(t, err, "Should not have an error decoding response")
+	assert.Equal(t, "Hello World", body["message"], "Response message should be 'Hello World'")
+}
