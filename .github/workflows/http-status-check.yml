@@ -45,42 +45,28 @@ jobs:
         name: Test / Endpoints
         run: |
           cd ${{ matrix.framework }}
-
-          echo "PORT=8088" > .env
-          echo "APP_ENV=local" >> .env
-          echo "DB_HOST=localhost" >> .env
-          echo "DB_PORT=5432" >> .env
-          echo "DB_DATABASE=blueprint" >> .env
-          echo "DB_USERNAME=melkey" >> .env
-          echo "DB_PASSWORD=password1234" >> .env
-
           make run &
           sleep 5
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
-          if [ $STATUS_CODE -ne 200 ]; then
-            echo "Error: Non-200 status code received ($STATUS_CODE)"
-            exit 1
+
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
+          if [[ $status_code != "200"]]; then
+              echo "Error: Unexpected status code $status_code"
+              exit 1
           fi
-      
+          echo "Request successful with status code $status_code"
+
       - if : ${{ matrix.driver != 'none' && matrix.advanced != 'htmx'}}
         name: Test /health Endpoints
         run: |
           cd ${{ matrix.framework }}
-
-          echo "PORT=8088" > .env
-          echo "APP_ENV=local" >> .env
-          echo "DB_HOST=localhost" >> .env
-          echo "DB_PORT=5432" >> .env
-          echo "DB_DATABASE=blueprint" >> .env
-          echo "DB_USERNAME=melkey" >> .env
-          echo "DB_PASSWORD=password1234" >> .env
-
           make run &
           sleep 5
           make docker-run &
           sleep 15
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080/health)
-          if [ $STATUS_CODE -ne 200 ]; then
-            echo "Error: Non-200 status code received ($STATUS_CODE)"
-            exit 1
+
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
+          if [[ $status_code != "200"]]; then
+              echo "Error: Unexpected status code $status_code"
+              exit 1
           fi
+          echo "Request successful with status code $status_code"
