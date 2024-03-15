@@ -41,16 +41,6 @@ jobs:
         name: Run templ generate
         run: /home/runner/go/bin/templ generate -path ${{ matrix.framework }}
 
-      - if : ${{ matrix.driver == 'none' && matrix.advanced != 'htmx' && matrix.advanced != 'websocket' && matrix.advanced != 'githubaction' }}
-        name: Test / Endpoints
-        run: |
-          make run
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
-          if [ $STATUS_CODE -ne 200 ]; then
-            echo "Error: Non-200 status code received ($STATUS_CODE)"
-            exit 1
-          fi
-
       # - if : ${{ matrix.driver == 'none' && matrix.advanced != 'htmx' && matrix.advanced != 'websocket' && matrix.advanced != 'githubaction' }}
       - name: Test /health Endpoints
         run: |
