@@ -25,6 +25,14 @@ jobs:
           [htmx, githubaction, websocket]
         goVersion: ["1.22"]
     runs-on: ubuntu-latest
+    env:
+      PORT: 8080
+      APP_ENV: local
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: blueprint
+      DB_USERNAME: melkey
+      DB_PASSWORD: password1234
     steps:
       - uses: actions/checkout@v4
       - name: Commit report
@@ -54,7 +62,7 @@ jobs:
           fi
       
       - if : ${{ matrix.driver != 'none' && matrix.advanced != 'htmx'}}
-        name: Test / health Endpoints
+        name: Test /health Endpoints
         run: |
           cd ${{ matrix.framework }}
           make run &
