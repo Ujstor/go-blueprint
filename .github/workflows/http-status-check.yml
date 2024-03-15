@@ -25,14 +25,6 @@ jobs:
           [htmx, githubaction, websocket]
         goVersion: ["1.22"]
     runs-on: ubuntu-latest
-    env:
-      PORT: 8080
-      APP_ENV: local
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_DATABASE: blueprint
-      DB_USERNAME: melkey
-      DB_PASSWORD: password1234
     steps:
       - uses: actions/checkout@v4
       - name: Commit report
@@ -53,6 +45,15 @@ jobs:
         name: Test / Endpoints
         run: |
           cd ${{ matrix.framework }}
+
+          echo "PORT=8088" > .env
+          echo "APP_ENV=local" >> .env
+          echo "DB_HOST=localhost" >> .env
+          echo "DB_PORT=5432" >> .env
+          echo "DB_DATABASE=blueprint" >> .env
+          echo "DB_USERNAME=melkey" >> .env
+          echo "DB_PASSWORD=password1234" >> .env
+
           make run &
           sleep 5
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
@@ -65,6 +66,15 @@ jobs:
         name: Test /health Endpoints
         run: |
           cd ${{ matrix.framework }}
+
+          echo "PORT=8088" > .env
+          echo "APP_ENV=local" >> .env
+          echo "DB_HOST=localhost" >> .env
+          echo "DB_PORT=5432" >> .env
+          echo "DB_DATABASE=blueprint" >> .env
+          echo "DB_USERNAME=melkey" >> .env
+          echo "DB_PASSWORD=password1234" >> .env
+
           make run &
           sleep 5
           make docker-run &
