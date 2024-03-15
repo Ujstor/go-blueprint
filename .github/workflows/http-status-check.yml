@@ -44,7 +44,8 @@ jobs:
       # - if : ${{ matrix.driver == 'none' && matrix.advanced != 'htmx' && matrix.advanced != 'websocket' && matrix.advanced != 'githubaction' }}
       - name: Test /health Endpoints
         run: |
-          go run cmd/api/main.go
+          cd ${{ matrix.framework }}
+          make run
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
           if [ $STATUS_CODE -ne 200 ]; then
             echo "Error: Non-200 status code received ($STATUS_CODE)"
