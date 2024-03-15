@@ -45,7 +45,8 @@ jobs:
       - name: Test /health Endpoints
         run: |
           cd ${{ matrix.framework }}
-          make run
+          make run &
+          sleep 5
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
           if [ $STATUS_CODE -ne 200 ]; then
             echo "Error: Non-200 status code received ($STATUS_CODE)"
