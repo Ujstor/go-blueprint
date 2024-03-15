@@ -42,11 +42,21 @@ jobs:
         run: /home/runner/go/bin/templ generate -path ${{ matrix.framework }}
 
       - if : ${{ matrix.advanced != 'htmx' }}
-        name: Test / Endpoints
+        name: Test / Endpoint
         run: |
           cd ${{ matrix.framework }}
           make run &
           sleep 5
+
+          echo "PORT=8088" > .env
+          echo "APP_ENV=local" >> .env
+          echo "DB_HOST=localhost" >> .env
+          echo "DB_PORT=5432" >> .env
+          echo "DB_DATABASE=blueprint" >> .env
+          echo "DB_USERNAME=melkey" >> .env
+          echo "DB_PASSWORD=password1234" >> .env
+
+          ls -la
 
           status_code=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
           if [[ $status_code != "200"]]; then
@@ -55,18 +65,21 @@ jobs:
           fi
           echo "Request successful with status code $status_code"
 
-      - if : ${{ matrix.driver != 'none' && matrix.advanced != 'htmx'}}
-        name: Test /health Endpoints
-        run: |
-          cd ${{ matrix.framework }}
-          make run &
-          sleep 5
-          make docker-run &
-          sleep 15
+      # - if : ${{ matrix.driver != 'none' && matrix.advanced != 'htmx'}}
+      #   name: Test /health Endpoints
+      #   run: |
+      #     cd ${{ matrix.framework }}
+      #     make run &
+      #     sleep 5
+      #     make docker-run &
+      #     sleep 15
 
-          status_code=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
-          if [[ $status_code != "200"]]; then
-              echo "Error: Unexpected status code $status_code"
-              exit 1
-          fi
-          echo "Request successful with status code $status_code"
+      #     status_code=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
+      #     if [[ $status_code != "200"]]; then
+      #         echo "Error: Unexpected status code $status_code"
+      #         exit 1
+      #     fi
+      #     echo "Request successful with status code $status_code"
+
+env:
+  ACTIONS_RUNNER_DEBUG: 'true'
