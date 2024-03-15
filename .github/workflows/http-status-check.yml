@@ -41,8 +41,8 @@ jobs:
         name: Run templ generate
         run: /home/runner/go/bin/templ generate -path ${{ matrix.framework }}
 
-      # - if : ${{ matrix.driver == 'none' && matrix.advanced != 'htmx' && matrix.advanced != 'websocket' && matrix.advanced != 'githubaction' }}
-      - name: Test / Endpoints
+      - if : ${{ matrix.advanced != 'htmx' }}
+        name: Test / Endpoints
         run: |
           cd ${{ matrix.framework }}
           make run &
@@ -53,7 +53,7 @@ jobs:
             exit 1
           fi
       
-      - if : ${{ matrix.driver != 'none' }}
+      - if : ${{ matrix.driver != 'none' && matrix.advanced != 'htmx'}}
         name: Test / health Endpoints
         run: |
           cd ${{ matrix.framework }}
