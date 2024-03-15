@@ -45,7 +45,7 @@ jobs:
       - name: Test / Endpoints
         run: |
           cd ${{ matrix.framework }}
-          make run
+          make run &
           sleep 5
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080)
           if [ $STATUS_CODE -ne 200 ]; then
@@ -57,9 +57,9 @@ jobs:
         name: Test / health Endpoints
         run: |
           cd ${{ matrix.framework }}
-          make run
+          make run &
           sleep 5
-          make docker-run
+          make docker-run &
           sleep 15
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" localhost:8080/health)
           if [ $STATUS_CODE -ne 200 ]; then
